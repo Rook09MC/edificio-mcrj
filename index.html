@@ -209,18 +209,14 @@
                 if (panelIzquierdo) panelIzquierdo.style.display = 'none';
                 if (panelDerecho) panelDerecho.className = 'col-lg-12';
 
-                google.script.run
-                    .withSuccessHandler(function(datos) {
-                        baseDatosEdificio = datos;
-                        if (loader) loader.classList.add('d-none');
-                        document.getElementById('placeholderText').classList.add('d-none');
-                        document.getElementById('datosContenedor').classList.remove('d-none');
-                        mostrarDetalles(idUsuario); 
-                    })
-                    .withFailureHandler(function(err) {
-                        alert("Error crítico de base de datos: " + err.message);
-                    })
-                    .obtenerDatosEdificio();
+                fetch(
+"https://script.google.com/macros/s/AKfycbyzdM9AMPvlLU92GQTpFgiDriVwUzIPCBYciK2dAelqWJkdXpusTxdKEbu56ebf8YvV2g/exec?action=datos"
+)
+.then(r => r.json())
+.then(datos => {
+    baseDatosEdificio = datos;
+    renderizarEdificio();
+})
             } else {
                 sincronizarConSheets();
             }
@@ -233,17 +229,14 @@
             if (panel) panel.style.opacity = '0.3';
 
             if (typeof google !== 'undefined' && google.script) {
-                google.script.run
-                    .withSuccessHandler(function(datos) {
-                        baseDatosEdificio = datos;
-                        renderizarEdificio();
-                        if (loader) loader.classList.add('d-none');
-                        if (panel) panel.style.opacity = '1';
-                    })
-                    .withFailureHandler(function(err) {
-                        alert('Error de conexión: ' + err.message);
-                    })
-                    .obtenerDatosEdificio();
+                fetch(
+"https://script.google.com/macros/s/AKfycbyzdM9AMPvlLU92GQTpFgiDriVwUzIPCBYciK2dAelqWJkdXpusTxdKEbu56ebf8YvV2g/exec?action=datos"
+)
+.then(r => r.json())
+.then(datos => {
+    baseDatosEdificio = datos;
+    renderizarEdificio();
+})
             }
         }
 
@@ -383,43 +376,91 @@ document.getElementById('seccionPago')
             reader.onload = function(e) {
                 var base64Data = e.target.result.split(',')[1];
                 
-                google.script.run
-                    .withSuccessHandler(function(resultado) {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Registrar y Validar Pago';
-                        
-                        if (statusDiv) {
-                            statusDiv.classList.remove('text-primary');
-                            statusDiv.classList.add('text-success');
-                        }
-                        
-                        alert("Baucher enviado correctamente.\n\nNos comunicaremos con usted para validar el pago.");
-                        document.getElementById('formPago').reset();
-                        
-                        const urlParams = new URLSearchParams(window.location.search);
-                        if (urlParams.get('id')) {
-                            window.location.reload();
-                        } else {
-                            sincronizarConSheets();
-                        }
-                    })
-                    .withFailureHandler(function(err) {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Registrar y Validar Pago';
-                        
-                        if (statusDiv) {
-                            statusDiv.classList.remove('text-primary');
-                            statusDiv.classList.add('text-danger');
-                            statusDiv.innerText = "Error al subir: " + err.message;
-                        }
-                        alert("Hubo un error en el servidor: " + err.message);
-                    })
-                    .registrarPagoConArchivo({
-                        idDepto: idDepto,
-                        nombreArchivo: "Voucher_Depto_" + idDepto + "_" + new Date().getTime() + ".jpg",
-                        tipoMime: file.type,
-                        datosBase64: base64Data
-                    });
+                fetch(
+"https://script.google.com/macros/s/AKfycbyzdM9AMPvlLU92GQTpFgiDriVwUzIPCBYciK2dAelqWJkdXpusTxdKEbu56ebf8YvV2g/exec",
+{
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        idDepto: idDepto,
+        nombreArchivo:
+            "Voucher_Depto_" +
+            idDepto +
+            "_" +
+            new Date().getTime() +
+            ".jpg",
+        tipoMime: file.type,
+        datosBase64: base64Data
+    })
+})
+.then(response => response.json())
+.then(resultado => {
+
+    btn.disabled = false;
+    btn.innerHTML =
+        '<i class="bi bi-check-circle-fill me-1"></i> Enviar Comprobante';
+
+    if (statusDiv) {
+
+        statusDiv.classList.remove('text-primary');
+
+        statusDiv.classList.add('text-success');
+
+        statusDiv.innerText =
+            "Comprobante enviado correctamente.";
+
+    }
+
+    alert(
+        "Baucher enviado correctamente.\n\nNos comunicaremos con usted para validar el pago."
+    );
+
+    document
+        .getElementById('formPago')
+        .reset();
+
+    const urlParams =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    if (urlParams.get('id')) {
+
+        window.location.reload();
+
+    } else {
+
+        sincronizarConSheets();
+
+    }
+
+})
+.catch(err => {
+
+    btn.disabled = false;
+
+    btn.innerHTML =
+        '<i class="bi bi-check-circle-fill me-1"></i> Enviar Comprobante';
+
+    if (statusDiv) {
+
+        statusDiv.classList.remove('text-primary');
+
+        statusDiv.classList.add('text-danger');
+
+        statusDiv.innerText =
+            "Error al subir el archivo";
+
+    }
+
+    alert(
+        "Error de conexión: " +
+        err
+    );
+
+});
             };
             
             reader.readAsDataURL(file);
