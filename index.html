@@ -210,35 +210,65 @@
                 if (panelDerecho) panelDerecho.className = 'col-lg-12';
 
                 fetch(
-"https://script.google.com/macros/s/AKfycbyzdM9AMPvlLU92GQTpFgiDriVwUzIPCBYciK2dAelqWJkdXpusTxdKEbu56ebf8YvV2g/exec?action=datos"
+    "https://script.google.com/macros/s/AKfycbyzdM9AMPvlLU92GQTpFgiDriVwUzIPCBYciK2dAelqWJkdXpusTxdKEbu56ebf8YvV2g/exec?action=datos"
 )
 .then(r => r.json())
 .then(datos => {
+
     baseDatosEdificio = datos;
+
     renderizarEdificio();
+
+    if (loader)
+        loader.classList.add('d-none');
+
 })
+.catch(err => {
+
+    console.error(err);
+
+    alert("Error cargando datos");
+
+});
             } else {
                 sincronizarConSheets();
             }
         };
 
         function sincronizarConSheets() {
-            var loader = document.getElementById('loader');
-            var panel = document.getElementById('panelPrincipal');
-            if (loader) loader.classList.remove('d-none');
-            if (panel) panel.style.opacity = '0.3';
 
-            if (typeof google !== 'undefined' && google.script) {
-                fetch(
-"https://script.google.com/macros/s/AKfycbyzdM9AMPvlLU92GQTpFgiDriVwUzIPCBYciK2dAelqWJkdXpusTxdKEbu56ebf8YvV2g/exec?action=datos"
-)
-.then(r => r.json())
-.then(datos => {
-    baseDatosEdificio = datos;
-    renderizarEdificio();
-})
-            }
-        }
+    var loader = document.getElementById('loader');
+    var panel = document.getElementById('panelPrincipal');
+
+    if (loader) loader.classList.remove('d-none');
+    if (panel) panel.style.opacity = '0.3';
+
+    fetch(
+        "https://script.google.com/macros/s/AKfycbyzdM9AMPvlLU92GQTpFgiDriVwUzIPCBYciK2dAelqWJkdXpusTxdKEbu56ebf8YvV2g/exec?action=datos"
+    )
+    .then(r => r.json())
+    .then(datos => {
+
+        baseDatosEdificio = datos;
+
+        renderizarEdificio();
+
+        if (loader) loader.classList.add('d-none');
+
+        if (panel) panel.style.opacity = '1';
+
+    })
+    .catch(error => {
+
+        console.error(error);
+
+        alert(
+            "Error al cargar datos desde Google Sheets"
+        );
+
+    });
+
+}
 
         function renderizarEdificio() {
             var contenedor = document.getElementById('contenedorPisos');
